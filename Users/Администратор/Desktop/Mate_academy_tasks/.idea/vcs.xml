@@ -2,6 +2,7 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$/py-count-occurrences" vcs="" />
+    <mapping directory="$PROJECT_DIR$/py-linter-formatter" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/py-mutable-immutable" vcs="Git" />
   </component>
 </project>
