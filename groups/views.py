@@ -1,29 +1,72 @@
+from contextlib import redirect_stderr
+from multiprocessing import context
 from unicodedata import name
 from django.views.generic import TemplateView
-from groups.models import Student , Group , Teacher
+# from Django.groups.models import Category
+from groups.models import Student , Group , Teacher , Category , Tag 
+from groups.forms import CreateCourseForm , CreateStudentForm
+from django.shortcuts import redirect
+
+from django.db.models import Q, F
+from django.views.generic import TemplateView, ListView ,RedirectView
 
 
-class IndexView(TemplateView):
-    template_name = "index.html"
 
-    def get_context_data(self , **kwargs):
-        students = Student.objects.all()
-        groups = Group.objects.all()
-        teachers = Teacher.objects.all()
-        students_by_group = Student.objects.filter(
-            group = Group.objects.get(name="Python_Pro")
+
+class IndexView(ListView):
+    template_name = 'index.html'
+    model = Group
+    paginate_by = 10
+
+    def get_queryset(self):
+        queryset = super(IndexView, self).get_queryset()
+        return queryset.select_related(
+            'mentor'
+        ).prefetch_related(
+            "tags"
         )
-        students_by_teacher = Student.objects.filter(
-            group__in=Group.objects.filter(id__in=Teacher.objects.filter(name="Alexandra Paper"))
-        )
-        students_by_age = Student.objects.filter(age__gt=20)
-        students_by_teacher_age = Student.objects.filter(
-            group = Group.objects.filter(
-                id__in=Teacher.objects.filter(age__gt=20)
-            ).first()
-        )
-        email_students = Student.objects.filter(email__icontains = 'gmail.com')
 
-        print(students ,groups, teachers, students_by_group, students_by_teacher, students_by_age,
-              students_by_teacher_age, email_students)
-        return {}
+    def get_context_data(self, *args, **kwargs):
+        context = super(IndexView, self).get_context_data(*args, **kwargs)
+        context['categories'] = Category.objects.all()
+
+        return context
+
+
+class CreateCourse(TemplateView):
+    template_name = 'create_course.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(CreateCourse, self).get_context_data(**kwargs)
+        context['form'] = CreateCourseForm()
+        return context
+
+    def post(self, request):
+        form = CreateCourseForm(data=request.POST, files=request.FILES)
+        if form.is_valid():
+            form.create_course()
+            return redirect('/')
+
+        context = self.get_context_data()
+        context['form'] = form
+        return self.render_to_response(context)
+
+
+
+class CreateStudent(TemplateView):
+    template_name = 'create_student.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(CreateStudent, self).get_context_data(**kwargs)
+        context['form'] = CreateStudentForm()
+        return context
+
+    def post(self, request):
+        student_form = CreateStudentForm(data=request.POST, files=request.FILES)
+        if student_form.is_valid():
+            student_form.create_student()
+            return redirect('/')
+
+        context = self.get_context_data()
+        context['form'] = student_form
+        return self.render_to_response(context)
